@@ -1,9 +1,9 @@
 package com.prigozhaev.util;
 
-import com.prigozhaev.model.out.AggregatedData;
 import com.prigozhaev.model.in.Source;
 import com.prigozhaev.model.in.SourceData;
 import com.prigozhaev.model.in.TokenData;
+import com.prigozhaev.model.out.AggregatedData;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 

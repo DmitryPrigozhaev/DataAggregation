@@ -1,19 +1,14 @@
 package com.prigozhaev.service;
 
-import com.prigozhaev.model.out.AggregatedData;
 import com.prigozhaev.model.in.Source;
+import com.prigozhaev.model.out.AggregatedData;
 import com.prigozhaev.util.SourceConverter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.*;
 
 /**
@@ -34,16 +29,21 @@ import java.util.concurrent.*;
 @Service
 public class AggregationService {
 
-    @Value("${source.data.link}")
-    private String sourceData;
+    private final DataService dataService;
 
     /**
+     * TODO: think what to do with exception handling
+     *
+     * The main method for obtaining aggregated data from several external systems.
+     *
      * @return aggregated data collected from external systems
+     * @throws InterruptedException if the current thread was interrupted while waiting
+     * @throws ExecutionException   if the computation threw an exception
      */
-    public List<AggregatedData> getAggregatedData() throws InterruptedException {
+    public List<AggregatedData> getAggregatedData() throws InterruptedException, ExecutionException {
 
         final List<AggregatedData> aggregatedData = new ArrayList<>();
-        final List<Source> sources = getSource();
+        final List<Source> sources = dataService.getSource();
 
         final ExecutorService executor = Executors.newCachedThreadPool();
         final ExecutorCompletionService<AggregatedData> completionService = new ExecutorCompletionService<>(executor);
@@ -56,21 +56,11 @@ public class AggregationService {
         // there waiting so you must remember how many times to call take() (why not use forEach).
         for (int i = 0; i < sources.size(); i++) {
             final Future<AggregatedData> future = completionService.take();
-            try {
-                final AggregatedData data = future.get();
-                aggregatedData.add(data);
-            } catch (ExecutionException e) {
-                System.out.println("temp: error");
-            }
+            final AggregatedData data = future.get();
+            aggregatedData.add(data);
         }
 
         return aggregatedData;
-    }
-
-    // TODO: think what to do about it
-    private List<Source> getSource() {
-        ResponseEntity<Source[]> responseEntity = new RestTemplate().getForEntity(sourceData, Source[].class);
-        return new ArrayList<>(Arrays.asList(Objects.requireNonNull(responseEntity.getBody())));
     }
 
 }

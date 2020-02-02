@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Controller for receiving and aggregating data from several services.
@@ -27,7 +28,7 @@ public class AggregationController {
      * @return list of {@link AggregatedData}
      */
     @GetMapping("/getAggregatedData")
-    public List<AggregatedData> getAggregatedData() throws InterruptedException {
+    public List<AggregatedData> getAggregatedData() throws InterruptedException, ExecutionException {
         return aggregationService.getAggregatedData();
     }
 

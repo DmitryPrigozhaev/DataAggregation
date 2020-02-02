@@ -23,6 +23,8 @@ import lombok.Setter;
  * </pre>
  *
  * @author dprigozhaev on 01.02.2020
+ * @see SourceData
+ * @see TokenData
  */
 
 @Getter
