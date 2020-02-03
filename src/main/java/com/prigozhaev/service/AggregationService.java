@@ -1,11 +1,15 @@
 package com.prigozhaev.service;
 
 import com.prigozhaev.model.in.Source;
+import com.prigozhaev.model.in.SourceData;
+import com.prigozhaev.model.in.TokenData;
 import com.prigozhaev.model.out.AggregatedData;
-import com.prigozhaev.util.SourceConverter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +29,7 @@ import java.util.concurrent.*;
  * @author dprigozhaev on 01.02.2020
  */
 
+@Slf4j
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 @Service
 public class AggregationService {
@@ -32,32 +37,59 @@ public class AggregationService {
     private final DataService dataService;
 
     /**
-     * TODO: think what to do with exception handling
-     *
      * The main method for obtaining aggregated data from several external systems.
      *
      * @return aggregated data collected from external systems
-     * @throws InterruptedException if the current thread was interrupted while waiting
-     * @throws ExecutionException   if the computation threw an exception
      */
-    public List<AggregatedData> getAggregatedData() throws InterruptedException, ExecutionException {
+    public List<AggregatedData> getAggregatedData() {
 
-        final List<AggregatedData> aggregatedData = new ArrayList<>();
         final List<Source> sources = dataService.getSource();
+        final List<AggregatedData> aggregatedData = new ArrayList<>(sources.size());
 
         final ExecutorService executor = Executors.newCachedThreadPool();
         final ExecutorCompletionService<AggregatedData> completionService = new ExecutorCompletionService<>(executor);
 
-        sources.forEach(source -> completionService.submit(new SourceConverter(source)));
+        sources.forEach(source -> completionService.submit(() -> convertData(source)));
 
         executor.shutdown();
 
         // Unfortunately ExecutorCompletionService doesn't tell you how many Future objects are still
         // there waiting so you must remember how many times to call take() (why not use forEach).
         for (int i = 0; i < sources.size(); i++) {
-            final Future<AggregatedData> future = completionService.take();
-            final AggregatedData data = future.get();
-            aggregatedData.add(data);
+            try {
+                final Future<AggregatedData> future = completionService.take();
+                final AggregatedData data = future.get();
+                aggregatedData.add(data);
+            } catch (InterruptedException | ExecutionException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+
+        return aggregatedData;
+    }
+
+    /**
+     * Converts the source object and aggregates data from links to external resources.
+     *
+     * @param source the source data to be converted
+     * @return an aggregated object
+     */
+    private AggregatedData convertData(Source source) {
+        AggregatedData aggregatedData = new AggregatedData();
+
+        ResponseEntity<SourceData> sourceDataResponse = new RestTemplate().getForEntity(source.getSourceDataUrl(), SourceData.class);
+        ResponseEntity<TokenData> tokenDataResponse = new RestTemplate().getForEntity(source.getTokenDataUrl(), TokenData.class);
+
+        aggregatedData.setId(source.getId());
+
+        if (sourceDataResponse.getBody() != null) {
+            aggregatedData.setUrlType(sourceDataResponse.getBody().getUrlType());
+            aggregatedData.setVideoUrl(sourceDataResponse.getBody().getVideoUrl());
+        }
+
+        if (tokenDataResponse.getBody() != null) {
+            aggregatedData.setValue(tokenDataResponse.getBody().getValue());
+            aggregatedData.setTtl(tokenDataResponse.getBody().getTtl());
         }
 
         return aggregatedData;
