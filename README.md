@@ -1,4 +1,4 @@
-# DataAggregation
+# DataAggregation [![Build Status](https://travis-ci.com/DmitryPrigozhaev/DataAggregation.svg?branch=master)](https://travis-ci.com/DmitryPrigozhaev/DataAggregation)
 
 Service for receiving and aggregating data from an external system.
 
