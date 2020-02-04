@@ -19,6 +19,8 @@ import java.util.concurrent.*;
 /**
  * Service for receiving and aggregating data from several services.
  * <p>
+ * About solution:
+ * <p>
  * It is highly recommended not to use parallel streams for any long operations (getting data from the database,
  * network connections), since all parallel streams work with one fork/join pool and such long operations can
  * stop all parallel streams in the JVM due to lack of available threads in the pool, i.e. parallel streams should

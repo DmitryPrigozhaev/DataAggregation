@@ -22,10 +22,30 @@ import lombok.Setter;
 @NoArgsConstructor
 public class AggregatedData {
 
+    /**
+     * Camera ID.
+     */
     private Long id;
+
+    /**
+     * Type of link to the video stream.
+     * Possible values: "LIVE", "ARCHIVE".
+     */
     private String urlType;
+
+    /**
+     * Video stream link.
+     */
     private String videoUrl;
+
+    /**
+     * Security token.
+     */
     private String value;
+
+    /**
+     * Token lifetime.
+     */
     private Long ttl;
 
 }
