@@ -86,4 +86,25 @@ the data are considered invalid and are not taken into account as a result.
 * Lombok 1.18.10
 * JUnit 4.13
 * Mockito 3.2.4
+* Maven 3.6.0
+
+## Getting Started
+
+1. Make sure you have Maven 3.6.* installed and the environment variable ***M2_HOME*** is configured:
+
+    > mvn -version
+
+2. Clone repository:
+
+    > git clone https://github.com/DmitryPrigozhaev/DataAggregation.git
+
+    > cd DataAggregation
+
+3. Install application:
+
+    > mvn package
+
+4. Run application:
+
+    > mvn spring-boot:run
 
