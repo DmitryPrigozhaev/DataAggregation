@@ -6,10 +6,10 @@ import lombok.Setter;
 
 /**
  * Aggregated data from an external system.
- *
+ * <p>
  * Data obtained by combining data from {@link com.prigozhaev.model.in.Source} (external system), where
- * {@param urlType} and {@param videoUrl} — obtained from {@link com.prigozhaev.model.in.SourceData},
- * {@param value} and {@param ttl} — obtained from {@link com.prigozhaev.model.in.TokenData}
+ * {@code urlType} and {@code videoUrl} — obtained from {@link com.prigozhaev.model.in.SourceData},
+ * {@code value} and {@code ttl} — obtained from {@link com.prigozhaev.model.in.TokenData}
  *
  * @author dprigozhaev on 01.02.2020
  * @see com.prigozhaev.model.in.Source

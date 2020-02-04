@@ -4,6 +4,7 @@ import com.prigozhaev.model.in.Source;
 import com.prigozhaev.model.in.SourceData;
 import com.prigozhaev.model.in.TokenData;
 import com.prigozhaev.model.out.AggregatedData;
+import com.prigozhaev.service.data.DataService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,14 @@ import java.util.concurrent.*;
  * go for seconds and minutes.
  * <p>
  * Therefore, to solve the problem, we use ExecutorService.
+ * <p>
+ * The implementation {@code Executors.newCachedThreadPool()} used is due to the assumption that
+ * tasks of data aggregation in threads will complete quickly.
+ * <p>
+ * But for a heavily loaded system, such a choice is likely to be a bad decision,
+ * and it is better to use {@code Executor.newFixedThreadPool} (based on materials Joshua Bloch).
+ * <p>
+ * In any case, it is necessary to conduct a performance study.
  *
  * @author dprigozhaev on 01.02.2020
  */
@@ -35,6 +44,8 @@ import java.util.concurrent.*;
 public class AggregationService {
 
     private final DataService dataService;
+
+    private final RestTemplate restTemplate;
 
     /**
      * The main method for obtaining aggregated data from several external systems.
@@ -49,19 +60,20 @@ public class AggregationService {
         final ExecutorService executor = Executors.newCachedThreadPool();
         final ExecutorCompletionService<AggregatedData> completionService = new ExecutorCompletionService<>(executor);
 
-        sources.forEach(source -> completionService.submit(() -> convertData(source)));
+        sources.forEach(source -> completionService.submit(() -> aggregateDataFrom(source)));
 
         executor.shutdown();
 
-        // Unfortunately ExecutorCompletionService doesn't tell you how many Future objects are still
-        // there waiting so you must remember how many times to call take() (why not use forEach).
         for (int i = 0; i < sources.size(); i++) {
             try {
                 final Future<AggregatedData> future = completionService.take();
                 final AggregatedData data = future.get();
                 aggregatedData.add(data);
-            } catch (InterruptedException | ExecutionException e) {
-                log.error(e.getMessage(), e);
+            } catch (InterruptedException e) {
+                log.error(e.getMessage());
+                Thread.currentThread().interrupt();
+            } catch (ExecutionException e) {
+                log.error(e.getCause().getMessage());
             }
         }
 
@@ -74,11 +86,11 @@ public class AggregationService {
      * @param source the source data to be converted
      * @return an aggregated object
      */
-    private AggregatedData convertData(Source source) {
+    private AggregatedData aggregateDataFrom(Source source) {
         AggregatedData aggregatedData = new AggregatedData();
 
-        ResponseEntity<SourceData> sourceDataResponse = new RestTemplate().getForEntity(source.getSourceDataUrl(), SourceData.class);
-        ResponseEntity<TokenData> tokenDataResponse = new RestTemplate().getForEntity(source.getTokenDataUrl(), TokenData.class);
+        ResponseEntity<SourceData> sourceDataResponse = restTemplate.getForEntity(source.getSourceDataUrl(), SourceData.class);
+        ResponseEntity<TokenData> tokenDataResponse = restTemplate.getForEntity(source.getTokenDataUrl(), TokenData.class);
 
         aggregatedData.setId(source.getId());
 
