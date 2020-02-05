@@ -73,7 +73,6 @@ public class AggregationService {
                 aggregatedData.add(data);
             } catch (InterruptedException e) {
                 log.error(e.getMessage());
-                Thread.currentThread().interrupt();
             } catch (ExecutionException e) {
                 log.error(e.getCause().getMessage());
             }
